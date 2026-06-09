@@ -1,0 +1,28 @@
+[+] Subfinder Enumeration for target-corp.local:
+api.target-corp.local
+dev.target-corp.local
+admin-staging.target-corp.local
+blog.target-corp.local
+
+[+] Nmap Scan Report for dev.target-corp.local (10.0.50.12):
+Host is up (0.041s latency).
+Not shown: 994 closed ports
+PORT     STATE SERVICE       VERSION
+22/tcp   open  ssh           OpenSSH 7.2p2 Ubuntu 4ubuntu2.10 (Ubuntu Linux; protocol 2.0)
+80/tcp   open  http          nginx 1.14.0 (Ubuntu)
+443/tcp  open  ssl/http      nginx 1.14.0 (Ubuntu)
+8080/tcp open  http-proxy    HAProxy http proxy 1.3.1 or later
+3306/tcp open  mysql         MySQL 5.7.33
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+[+] FFUF Directory Fuzzing on admin-staging.target-corp.local (Wordlist: common.txt):
+/index.html             [Status: 200, Size: 3122, Words: 412]
+/login.php              [Status: 200, Size: 1423, Words: 120]
+/assets                 [Status: 301, Size: 169, Words: 5]
+/css                    [Status: 301, Size: 170, Words: 5]
+/.git/config            [Status: 200, Size: 245, Words: 20]
+/server-status          [Status: 403, Size: 278, Words: 22]
+
+[+] Nuclei Scan Results:
+[tls-version] [ssl] dev.target-corp.local:443 [TLSv1.2]
+[http-missing-security-headers] [http] http://blog.target-corp.local
