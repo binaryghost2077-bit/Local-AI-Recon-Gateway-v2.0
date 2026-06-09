@@ -7,17 +7,14 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
 
 # Initialisiere die Rich-Console für ein sauberes CLI-Interface
-if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8')
 console = Console()
 
 class LocalAIReconGateway:
-    def __init__(self, api_url="http://127.0.0.1:1234/v1/chat/completions", model="local-model", api_key="lm-studio"):
+    def __init__(self, api_url="http://127.0.0.1:1234/v1/chat/completions", model="local-model"):
         self.api_url = api_url
         self.model = model
-        self.api_key = api_key
         
-        # Der optimierte System-Prompt für maximale Hacker-Präzision
+        # Der ultimative System-Prompt mit strikten Anti-Halluzinations-Regeln
         self.system_prompt = (
             "Du bist ein Senior Penetration Tester und Bug Bounty Hunter. "
             "Deine Aufgabe ist es, rohe Recon-Daten schonungslos zu filtern. "
@@ -27,7 +24,8 @@ class LocalAIReconGateway:
             "veraltete Versionen (z.B. OpenSSH < 7.5) und interne Panels.\n"
             "3. Erstelle keine Zusammenfassung! Liefere direkt einen priorisierten 'Action Plan' in Markdown.\n"
             "4. Kennzeichne kritische Funde mit 🚨.\n"
-            "5. ANTWORT-SPRACHE: Du musst strikt und ausschließlich auf DEUTSCH antworten!"
+            "5. STRIKTE REGEL: HALLUZINIERE NICHT! Erfinde niemals CVE-Nummern. Nenne nur CVEs, wenn sie absolut zweifelsfrei zur erkannten Version passen.\n"
+            "6. STRIKTE REGEL: Behaupte nicht, dass du Dateien speicherst, JSON-Dateien erstellst oder externe Aktionen durchführst. Du bist nur ein Text-Analysator."
         )
 
     def chunk_data(self, text, chunk_size=3000):
@@ -49,14 +47,13 @@ class LocalAIReconGateway:
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": f"Analysiere folgenden Recon-Auszug:\n\n{chunk}"}
             ],
-            "temperature": 0.2, # Niedrige Temperatur für analytische Präzision
+            "temperature": 0.1, # Temperatur weiter gesenkt (0.1), um Halluzinationen radikal zu minimieren
             "max_tokens": 1000
         }
 
         try:
-            # Timeout von 120 Sekunden, falls das lokale Modell auf schwächerer Hardware läuft
-            headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=120)
+            # Timeout von 120 Sekunden
+            response = requests.post(self.api_url, json=payload, timeout=120)
             response.raise_for_status()
             return response.json()['choices'][0]['message']['content']
         
@@ -67,13 +64,6 @@ class LocalAIReconGateway:
         except requests.exceptions.Timeout:
             console.print("[bold red][!] Timeout:[/bold red] Das lokale Modell hat zu lange für die Antwort gebraucht.")
             sys.exit(1)
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 401:
-                console.print(f"[bold red][!] Unauthorized (401):[/bold red] Der API-Key wurde abgelehnt oder fehlt. Bitte überprüfe den Key (--api-key).")
-            else:
-                console.print(f"[bold red][!] HTTP Fehler ({e.response.status_code}):[/bold red] {e}")
-                console.print(f"[bold yellow]Antwort vom Server:[/bold yellow] {e.response.text}")
-            sys.exit(1)
         except Exception as e:
             console.print(f"[bold red][!] Unerwarteter Fehler:[/bold red] {e}")
             sys.exit(1)
@@ -83,7 +73,6 @@ def main():
     parser = argparse.ArgumentParser(description="KI-Recon-Gateway: Lokale LLM-Analyse für Bug Bounties")
     parser.add_argument("-f", "--file", required=True, help="Pfad zur Recon-Logdatei (z.B. nmap_output.txt)")
     parser.add_argument("-e", "--endpoint", default="http://127.0.0.1:1234/v1/chat/completions", help="Lokaler KI-API-Endpoint (Standard: LM Studio)")
-    parser.add_argument("-k", "--api-key", default="lm-studio", help="API Key für das lokale Modell (Standard: lm-studio)")
     args = parser.parse_args()
 
     console.print(Panel.fit("[bold blue]🛡️ Local AI Recon Gateway v1.0[/bold blue]\n[dim]Initializing offline analysis...[/dim]"))
@@ -96,12 +85,12 @@ def main():
     with open(args.file, 'r', encoding='utf-8', errors='ignore') as f:
         recon_data = f.read()
 
-    gateway = LocalAIReconGateway(api_url=args.endpoint, api_key=args.api_key)
+    gateway = LocalAIReconGateway(api_url=args.endpoint)
     chunks = list(gateway.chunk_data(recon_data))
     
     console.print(f"[*] Datei geladen. Zerlegt in [bold green]{len(chunks)}[/bold green] Chunks für die lokale Verarbeitung.\n")
 
-    # 3. Verarbeitung mit visuellem Feedback und Graceful Exit (Strg+C)
+    # 3. Verarbeitung mit visuellem Feedback
     full_report = ""
     try:
         with Progress(
@@ -120,7 +109,6 @@ def main():
                 progress.advance(task)
 
     except KeyboardInterrupt:
-        # Fängt Strg+C sauber ab, ohne hässlichen Python-Traceback
         console.print("\n[bold yellow][!] Analyse vom Benutzer abgebrochen (Strg+C).[/bold yellow]")
         sys.exit(0)
 
@@ -128,7 +116,6 @@ def main():
     console.print(Panel("[bold green]✅ Analyse abgeschlossen![/bold green]"))
     console.print("\n[bold underline]KI-Ergebnis:[/bold underline]\n")
     
-    # Nutze Rich, um Markdown direkt im Terminal hübsch zu rendern
     from rich.markdown import Markdown
     console.print(Markdown(full_report))
 
