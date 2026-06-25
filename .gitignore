@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 💎 PREMIUM VERSION - NICHT HOCHLADEN!
+recon_gateway.py
+
+# Output, Logs & Demos
+*.md
+!README_FREE.md
+!README.md
+*.json
+*.txt
+!requirements.txt
+dirty_recon.txt
+
+# Virtual Environments
+venv/
+.env/
+env/
